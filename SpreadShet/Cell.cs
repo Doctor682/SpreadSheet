@@ -19,11 +19,16 @@ namespace SpreadShet
             Address = cellAddress;
             RawValue = rawValue;
             CellType = DetermineCellType(RawValue);
-            ParsedValue = null;
+            ParsedValue = CheckingForSimpleValues(CellType, RawValue);
         }
         public void Evaluate(CellValueParser parser, Dictionary<CellAddress, Cell> cellMap)
         {
             ParsedValue = parser.ParseCellValue(CellType, RawValue, cellMap);
+        }
+        public string? CheckingForSimpleValues(CellType CellType, string? RawValue)
+        {
+            if (CellType != CellType.Formula) return RawValue;
+            return null;
         }
         public CellType DetermineCellType(string? rawValue)
         {

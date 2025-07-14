@@ -21,7 +21,7 @@ namespace SpreadShet
             if (string.IsNullOrWhiteSpace(cellAddress))
                 throw new ArgumentException("Address is null or empty.");
 
-            var match = Regex.Match(cellAddress, @"^([A-Z]+)(\d+)$");
+            Match match = Regex.Match(cellAddress, @"^([A-Z]+)(\d+)$");
             if (!match.Success)
                 throw new ArgumentException("Invalid cell address format. Expected format like 'A1', 'B2', 'AA10'.");
 

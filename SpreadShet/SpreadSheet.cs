@@ -27,14 +27,20 @@ namespace SpreadShet
             if (!_cellMap.TryGetValue(address, out var cell))
                 return string.Empty;
 
-                cell.Evaluate(_parser, _cellMap);
-
             return cell.ParsedValue;
         }
         public void SetCellValue(CellAddress cellAddress, string? cellInputValue)
         {
             if (!_cellMap.ContainsKey(cellAddress))
                 _cellMap[cellAddress] = new Cell(cellAddress, cellInputValue);
+        }
+
+        public void CellEvaluateValue()
+        {
+            foreach (var cell in _cellMap.Values)
+            {
+                cell.Evaluate(_parser, _cellMap);
+            }
         }
     }
 }

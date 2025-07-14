@@ -16,10 +16,6 @@ namespace SpreadShet
             ColumnSize = columnSize;
             RowSize = rowSize;
         }
-        public int GetDimensions()
-        {
-            return ColumnSize*RowSize;
-        }
     }
 
 }

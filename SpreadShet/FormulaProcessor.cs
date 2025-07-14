@@ -20,13 +20,13 @@ namespace SpreadShet
                 return ErrorValue;
 
             string formula = rawFormula[1..];
-            var checkedCellsValues = CheckCellValuesConsistency(formula, _cellMap);
-            if(checkedCellsValues.error == ErrorValue)
+            var (cellType, error) = CheckCellValuesConsistency(formula, _cellMap);
+            if(error == ErrorValue)
             {
                 return ErrorValue;       
             }  
 
-            switch (checkedCellsValues.type)
+            switch (cellType)
             {
                 case FormulaType.Text:
                     return EvaluateTextFormula(formula, _cellMap);
@@ -53,7 +53,7 @@ namespace SpreadShet
             bool containsNumbers = false;
             bool containsText = false;
 
-            foreach (var address in ExtractCellAddresses(formula))
+            foreach (string? address in ExtractCellAddresses(formula))
             {
                 var (isNumber, isText, error) = AnalyzeCell(address, _cellMap);
                 if (error != string.Empty)
@@ -81,7 +81,7 @@ namespace SpreadShet
 
             try
             {
-                var cellAddr = CellAddress.Parse(address);
+                CellAddress cellAddr = CellAddress.Parse(address);
                 if (!_cellMap.TryGetValue(cellAddr, out Cell? cell))
                     return (false, false, string.Empty);
 
@@ -149,38 +149,38 @@ namespace SpreadShet
         {
             try
             {
-                var tokens = TokenizeFormula(formula);
-                var values = new List<double>();
-                var operators = new List<string>();
+                List<string> tokens = TokenizeFormula(formula);
+                List<double> values = new List<double>();
+                List<string> operators = new List<string>();
 
-                for (int i = 0; i < tokens.Count; i++)
+                for (int tokenIndex = 0; tokenIndex < tokens.Count; tokenIndex++)
                 {
-                    if (IsOperator(tokens[i]))
+                    if (IsOperator(tokens[tokenIndex]))
                     {
-                        if (tokens[i] == "*" || tokens[i] == "/")
+                        if (tokens[tokenIndex] == "*" || tokens[tokenIndex] == "/")
                         {
                             double left = values[^1];
-                            double right = GetNumericValue(tokens[i + 1], _cellMap);
-                            values[^1] = tokens[i] == "*" ? left * right : left / right;
-                            i++;
+                            double right = GetNumericValue(tokens[tokenIndex + 1], _cellMap);
+                            values[^1] = tokens[tokenIndex] == "*" ? left * right : left / right;
+                            tokenIndex++;
                         }
                         else
                         {
-                            operators.Add(tokens[i]);
+                            operators.Add(tokens[tokenIndex]);
                         }
                     }
                     else
                     {
-                        values.Add(GetNumericValue(tokens[i], _cellMap));
+                        values.Add(GetNumericValue(tokens[tokenIndex], _cellMap));
                     }
                 }
                 double result = values[0];
-                for (int i = 0; i < operators.Count; i++)
+                for (int operatorsIndex = 0; operatorsIndex < operators.Count; operatorsIndex++)
                 {
-                    result = operators[i] switch
+                    result = operators[operatorsIndex] switch
                     {
-                        "+" => result + values[i + 1],
-                        "-" => result - values[i + 1],
+                        "+" => result + values[operatorsIndex + 1],
+                        "-" => result - values[operatorsIndex + 1],
                         _ => result
                     };
                 }
@@ -197,11 +197,11 @@ namespace SpreadShet
         {
             try
             {
-                var tokens = TokenizeFormula(formula);
-                var result = new StringBuilder();
-                string currentOperator = null;
+                List<string> tokens = TokenizeFormula(formula);
+                StringBuilder result = new StringBuilder();
+                string? currentOperator = null;
 
-                foreach (var token in tokens)
+                foreach (string? token in tokens)
                 {
                     if (IsOperator(token))
                     {
@@ -236,8 +236,8 @@ namespace SpreadShet
 
         private static List<string> TokenizeFormula(string formula)
         {
-            var tokens = new List<string>();
-            var currentToken = new StringBuilder();
+            List<string> tokens = new List<string>();
+            StringBuilder currentToken = new StringBuilder();
 
             foreach (char c in formula)
             {
@@ -269,7 +269,7 @@ namespace SpreadShet
             if (double.TryParse(token, out double number))
                 return number;
 
-            var cell = cellMap[CellAddress.Parse(token)];
+            Cell cell = cellMap[CellAddress.Parse(token)];
 
             if (cell.CellType == CellType.Formula)
             {
@@ -284,14 +284,21 @@ namespace SpreadShet
                 : throw new InvalidOperationException("Not a number");
         }
 
-        private static string GetTextValue(string token, Dictionary<CellAddress, Cell> _cellMap)
+        private static string GetTextValue(string token, Dictionary<CellAddress, Cell> map)
         {
             if (token.StartsWith("\"") && token.EndsWith("\""))
                 return token[1..^1];
 
-            var cell = _cellMap[CellAddress.Parse(token)];
+            Cell cell = map[CellAddress.Parse(token)];
+
+            if (cell.CellType == CellType.Formula)
+            {
+                string formulaResult = EvaluateFormula(cell.RawValue, map);
+                return formulaResult == ErrorValue ? string.Empty : formulaResult;
+            }
             return cell.ParsedValue ?? string.Empty;
         }
+
 
         private static bool IsOperator(string token) =>
             token.Length == 1 && GetAllOperatorSymbols().Contains(token[0]);

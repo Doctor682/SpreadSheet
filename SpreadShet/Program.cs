@@ -31,6 +31,8 @@ spreadSheetService.FillCellWithValue();
 ConsoleLogs.ShowUnevaluatedSpreadSheetTitle();
 spreadSheetService.PrintUnevaluatedSpreadSheet();
 
+spreadSheet.CellEvaluateValue();
+
 ConsoleLogs.ShowEvaluatedSpreadSheetTitle();
 spreadSheetService.PrintEvaluatedSpreadSheet();
 
